@@ -198,7 +198,7 @@ Icons.SetIconsType("lucide") -- lucide, craft and more...
 local Window =
     WindUI:CreateWindow(
     {
-        Title = "KIMIJODAI| Pain💸",
+        Title = "KIMIJODAI| Paid💸",
         Icon = "",
         Author = "Block spin",
         Folder = "By KIMIJODAI",
