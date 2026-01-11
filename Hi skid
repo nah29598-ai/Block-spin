@@ -1,193 +1,181 @@
---[[ made by #nah2959-ai
-    Silent Aim & Anti Aim GUI - Roblox Lua
-    Paste this into your executor!
-    Educational/learning use only.
-]]
+-- Hermes-style Silent Aim & Anti Aim GUI (Roblox Lua, for exploit environments)
+-- Paste into your executor for live GUI toggling and adjustment!
 
--- Simple GUI utility
-local function Create(label, kind)
-    local inst = Instance.new(kind)
-    inst.Name = label
-    return inst
-end
+-- Core exploit logic (see below) must be loaded or present in your script!
 
--- Settings
-getgenv().SilentAim_Enabled = false
-getgenv().AntiAim_Enabled = false
-getgenv().SilentAim_FOV = 300
-getgenv().AntiAim_Strength = 10
+-- SETTINGS (for use in exploit logic)
+getgenv().SilentAim_ON = false
+getgenv().SilentAim_FOV = 120
+getgenv().SilentAim_Target = "Head"
+getgenv().AntiAim_ON = false
+getgenv().AntiAim_Strength = 7
+getgenv().AntiAim_Spin = 2.5
 
--- GUI
-local ScreenGui = Create("SAntiA-GUI", "ScreenGui")
-pcall(function() ScreenGui.Parent = game.CoreGui end)
-local Frame = Create("MainFrame", "Frame")
-Frame.Parent = ScreenGui
-Frame.BackgroundColor3 = Color3.new(0,0,0)
-Frame.Position = UDim2.new(0.05,0,0.4,0)
-Frame.Size = UDim2.new(0,250,0,180)
-Frame.Active = true
-Frame.Draggable = true
-Frame.BorderSizePixel = 0
+--------------------------------------------------
+-- GUI CREATION
+--------------------------------------------------
+local function c(n, t) local o = Instance.new(t) o.Name = n return o end
 
-local title = Create("TitleLbl", "TextLabel")
-title.Parent = Frame
-title.Text = "Silent Aim & Anti Aim"
-title.Size = UDim2.new(1,0,0,30)
-title.BackgroundColor3 = Color3.fromRGB(50,50,60)
-title.TextColor3 = Color3.new(1,1,1)
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 20
+local sg = c("HermesAimUI","ScreenGui") pcall(function() sg.Parent = game.CoreGui end)
+local f = c("MainFrame","Frame") f.Parent = sg
+f.Position = UDim2.new(0.05,0,0.18,0) f.Size = UDim2.new(0,270,0,255)
+f.BackgroundColor3 = Color3.fromRGB(25,26,35) f.Active=true f.Draggable=true f.BorderSizePixel=0
+
+local title = c("Title","TextLabel") title.Parent = f
+title.Text = "Hermes / Hermanos-style Aim Menu"
+title.Size=UDim2.new(1,0,0,32)
+title.Font=Enum.Font.GothamBold title.TextSize=20
+title.BackgroundColor3 = Color3.fromRGB(30,30,44) title.TextColor3 = Color3.new(1,1,1)
+
+local credit = c("CreditLBL","TextLabel") credit.Parent=f
+credit.Position = UDim2.new(0,0,1,-20) credit.Size=UDim2.new(1,0,0,20)
+credit.BackgroundTransparency=1 credit.Font=Enum.Font.SourceSans credit.TextSize=15
+credit.TextColor3=Color3.fromRGB(187,187,200)
+credit.Text="Copilot GUI | Customize & extend!"
 
 -- Silent Aim Toggle
-local SA_Toggle = Create("SAToggle", "TextButton")
-SA_Toggle.Parent = Frame
-SA_Toggle.Position = UDim2.new(0,10,0,40)
-SA_Toggle.Size = UDim2.new(0,110,0,30)
-SA_Toggle.BackgroundColor3 = Color3.fromRGB(60,80,60)
-SA_Toggle.TextColor3 = Color3.new(1,1,1)
-SA_Toggle.Text = "Silent Aim: OFF"
-
-SA_Toggle.MouseButton1Click:Connect(function()
-    getgenv().SilentAim_Enabled = not getgenv().SilentAim_Enabled
-    SA_Toggle.Text = "Silent Aim: "..(getgenv().SilentAim_Enabled and "ON" or "OFF")
+local saT=c("SA_Toggle","TextButton") saT.Parent=f
+saT.Position=UDim2.new(0.05,0,0,48) saT.Size=UDim2.new(0,120,0,32)
+saT.BackgroundColor3=Color3.fromRGB(34,80,52) saT.TextColor3=Color3.new(1,1,1)
+saT.Text="Silent Aim: OFF" saT.Font=Enum.Font.GothamBold
+saT.TextSize=16
+saT.MouseButton1Click:Connect(function()
+    getgenv().SilentAim_ON=not getgenv().SilentAim_ON
+    saT.Text="Silent Aim: "..(getgenv().SilentAim_ON and "ON" or "OFF")
 end)
 
--- Silent Aim FOV Slider
-local SA_FOV = Create("SAFov", "TextBox")
-SA_FOV.Parent = Frame
-SA_FOV.Position = UDim2.new(0,130,0,40)
-SA_FOV.Size = UDim2.new(0,100,0,30)
-SA_FOV.BackgroundColor3 = Color3.fromRGB(40,40,60)
-SA_FOV.TextColor3 = Color3.new(1,1,0.7)
-SA_FOV.Text = "FOV: "..tostring(getgenv().SilentAim_FOV)
-SA_FOV.ClearTextOnFocus = false
+-- Silent Aim FOV (drag value box)
+local saF = c("SA_FOV","TextBox") saF.Parent=f
+saF.Position=UDim2.new(0.58,0,0,48) saF.Size=UDim2.new(0,90,0,32)
+saF.BackgroundColor3=Color3.fromRGB(28,40,44)
+saF.Text="FOV: "..getgenv().SilentAim_FOV saF.Font=Enum.Font.Gotham saF.TextSize=16 saF.TextColor3=Color3.fromRGB(212,255,166)
+saF.ClearTextOnFocus = false
+saF.FocusLost:Connect(function()
+    local v=tonumber(saF.Text:match("%d+")) if v then getgenv().SilentAim_FOV=v end
+    saF.Text="FOV: "..getgenv().SilentAim_FOV
+end)
 
-SA_FOV.FocusLost:Connect(function()
-    local val = tonumber(SA_FOV.Text:match("%d+"))
-    if val then
-        getgenv().SilentAim_FOV = val
-        SA_FOV.Text = "FOV: "..tostring(val)
-    else
-        SA_FOV.Text = "FOV: "..tostring(getgenv().SilentAim_FOV)
-    end
+-- Silent Aim Target part select
+local dropd = c("SATargetDD","TextButton") dropd.Parent=f
+dropd.Position=UDim2.new(0.05,0,0,90) dropd.Size=UDim2.new(0,120,0,32)
+dropd.BackgroundColor3=Color3.fromRGB(25,30,52)
+dropd.Text="Target: "..getgenv().SilentAim_Target
+dropd.TextColor3=Color3.fromRGB(178,226,255)
+dropd.Font=Enum.Font.Gotham dropd.TextSize=16
+
+local partsTable = {"Head","UpperTorso","HumanoidRootPart","Torso"}
+dropd.MouseButton1Click:Connect(function()
+    local old = table.find(partsTable,getgenv().SilentAim_Target) or 1
+    local nexti = old%#partsTable+1
+    getgenv().SilentAim_Target = partsTable[nexti]
+    dropd.Text="Target: "..getgenv().SilentAim_Target
 end)
 
 -- Anti Aim Toggle
-local AA_Toggle = Create("AAToggle", "TextButton")
-AA_Toggle.Parent = Frame
-AA_Toggle.Position = UDim2.new(0,10,0,80)
-AA_Toggle.Size = UDim2.new(0,110,0,30)
-AA_Toggle.BackgroundColor3 = Color3.fromRGB(100,40,40)
-AA_Toggle.TextColor3 = Color3.new(1,1,1)
-AA_Toggle.Text = "Anti Aim: OFF"
-
-AA_Toggle.MouseButton1Click:Connect(function()
-    getgenv().AntiAim_Enabled = not getgenv().AntiAim_Enabled
-    AA_Toggle.Text = "Anti Aim: "..(getgenv().AntiAim_Enabled and "ON" or "OFF")
+local aaT = c("AA_Toggle","TextButton") aaT.Parent=f
+aaT.Position=UDim2.new(0.05,0,0,140) aaT.Size=UDim2.new(0,120,0,32)
+aaT.BackgroundColor3=Color3.fromRGB(104,32,42)
+aaT.TextColor3=Color3.fromRGB(255,230,230) aaT.Text="Anti Aim: OFF"
+aaT.Font=Enum.Font.GothamBold aaT.TextSize=16
+aaT.MouseButton1Click:Connect(function()
+    getgenv().AntiAim_ON=not getgenv().AntiAim_ON
+    aaT.Text="Anti Aim: "..(getgenv().AntiAim_ON and "ON" or "OFF")
 end)
 
--- Anti Aim Strength box
-local AA_ST = Create("AASt", "TextBox")
-AA_ST.Parent = Frame
-AA_ST.Position = UDim2.new(0,130,0,80)
-AA_ST.Size = UDim2.new(0,100,0,30)
-AA_ST.BackgroundColor3 = Color3.fromRGB(50,30,30)
-AA_ST.TextColor3 = Color3.new(1,0.8,0.7)
-AA_ST.Text = "Strength: "..tostring(getgenv().AntiAim_Strength)
-AA_ST.ClearTextOnFocus = false
-
-AA_ST.FocusLost:Connect(function()
-    local val = tonumber(AA_ST.Text:match("%d+"))
-    if val then
-        getgenv().AntiAim_Strength = val
-        AA_ST.Text = "Strength: "..tostring(val)
-    else
-        AA_ST.Text = "Strength: "..tostring(getgenv().AntiAim_Strength)
-    end
+-- Anti Aim Strength slider
+local aaS = c("AA_Strength","TextBox") aaS.Parent=f
+aaS.Position=UDim2.new(0.58,0,0,140) aaS.Size=UDim2.new(0,90,0,32)
+aaS.BackgroundColor3=Color3.fromRGB(42,24,28)
+aaS.Text="Strength: "..getgenv().AntiAim_Strength aaS.TextColor3=Color3.fromRGB(255,200,200)
+aaS.Font=Enum.Font.Gotham aaS.TextSize=16 aaS.ClearTextOnFocus = false
+aaS.FocusLost:Connect(function()
+    local v=tonumber(aaS.Text:match("%d+")) if v then getgenv().AntiAim_Strength=v end
+    aaS.Text="Strength: "..getgenv().AntiAim_Strength
 end)
 
--- Credits Label
-local cred = Create("Cred", "TextLabel")
-cred.Parent = Frame
-cred.Position = UDim2.new(0,0,1,-22)
-cred.Size = UDim2.new(1,0,0,22)
-cred.BackgroundTransparency = 1
-cred.TextColor3 = Color3.fromRGB(170,170,170)
-cred.Text = "Copilot - GUI Demo"
-cred.Font = Enum.Font.SourceSans
-cred.TextSize = 16
+-- Anti Aim Spin slider
+local aaSp = c("AA_Spin","TextBox") aaSp.Parent=f
+aaSp.Position=UDim2.new(0.58,0,0,180) aaSp.Size=UDim2.new(0,90,0,32)
+aaSp.BackgroundColor3=Color3.fromRGB(50,24,32)
+aaSp.Text="Spin: "..getgenv().AntiAim_Spin aaSp.TextColor3=Color3.fromRGB(255,190,200)
+aaSp.Font=Enum.Font.Gotham aaSp.TextSize=16 aaSp.ClearTextOnFocus = false
+aaSp.FocusLost:Connect(function()
+    local v=tonumber(aaSp.Text:match("(%d+%.*%d*)")) if v then getgenv().AntiAim_Spin=v end
+    aaSp.Text="Spin: "..getgenv().AntiAim_Spin
+end)
 
---------------------------------------------------------
--- Actual Script Logic
---------------------------------------------------------
+----------------------------------------------------
+-- LIVE UPDATING LOGIC (if not present, add below)
+----------------------------------------------------
 
+--# SILENT AIM (update to use toggled values)
+if not getgenv().HermesSilentAim then
+getgenv().HermesSilentAim = true
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
--- PART 1: Silent Aim (with FOV and toggling)
 local function getClosestPlayer()
-    if not getgenv().SilentAim_Enabled then return nil end
-    local closest, shortest = nil, getgenv().SilentAim_FOV or 300
-    local mousePos = UIS:GetMouseLocation()
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-            local head = p.Character.Head
-            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-            if onScreen then
-                local diff = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-                if diff < shortest then
-                    closest, shortest = p, diff
-                end
+    if not getgenv().SilentAim_ON then return nil end
+    local closest, dist, target = nil, getgenv().SilentAim_FOV or 1000, nil
+    local mouse = UIS:GetMouseLocation()
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p~=LocalPlayer and p.Character and p.Character:FindFirstChild(getgenv().SilentAim_Target) and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health>0 then
+            local part = p.Character[getgenv().SilentAim_Target]
+            local scr, vis = Camera:WorldToViewportPoint(part.Position)
+            if vis then
+                local d = (Vector2.new(scr.X,scr.Y)-mouse).Magnitude
+                if d<dist then closest,dist,target=p,d,part end
             end
         end
     end
-    return closest
+    return target
 end
 
-if not getgenv().SilentAimHooked then
-    getgenv().SilentAimHooked = true
-    local rawMeta = getrawmetatable(game)
-    local oldNamecall = rawMeta.__namecall
-    setreadonly(rawMeta, false)
-
-    rawMeta.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        local args = {...}
-
-        if method == "FireServer" and tostring(self):lower():find("hit") then
-            local target = getClosestPlayer()
-            if target and target.Character and target.Character:FindFirstChild("Head") then
-                args[2] = target.Character.Head.Position
-                return oldNamecall(self, unpack(args))
-            end
+local mt = getrawmetatable(game)
+local old = mt.__namecall
+setreadonly(mt,false)
+mt.__namecall = newcclosure(function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
+    if getgenv().SilentAim_ON and method == "FireServer" and tostring(self):lower():find("hit") then
+        local t=getClosestPlayer()
+        if t then
+            args[2]=t.Position
+            return old(self, unpack(args))
         end
-        return oldNamecall(self, ...)
-    end)
-    setreadonly(rawMeta, true)
+    end
+    return old(self, ...)
+end)
+setreadonly(mt,true)
 end
 
--- PART 2: Anti-Aim (toggle and strength adjustable)
+--# ANTI AIM (live, efficient)
+if not getgenv().HermesAntiAim then
+getgenv().HermesAntiAim = true
+local RunService = game:GetService("RunService")
+local lp = game:GetService("Players").LocalPlayer
+local PARTS = {"Head","UpperTorso","HumanoidRootPart"}
 spawn(function()
-    local last = 0
-    local rs = game:GetService("RunService")
     while true do
-        rs.RenderStepped:Wait()
-        if getgenv().AntiAim_Enabled then
-            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-            for _, partName in ipairs({"Head", "UpperTorso", "HumanoidRootPart", "Torso"}) do
-                local part = char:FindFirstChild(partName)
-                if part and part:IsA("BasePart") then
-                    -- Jitter/Spin, strength setting
-                    local s = getgenv().AntiAim_Strength or 10
-                    part.CFrame = part.CFrame + Vector3.new(
-                        math.random(-s,s)/5,
-                        math.random(-s,s)/5,
-                        math.random(-s,s)/5
-                    )
+        RunService.RenderStepped:Wait()
+        if getgenv().AntiAim_ON then
+            local c = lp.Character or lp.CharacterAdded:Wait()
+            for _,pn in ipairs(PARTS) do
+                local p = c:FindFirstChild(pn)
+                if p and p:IsA("BasePart") then
+                    local st = getgenv().AntiAim_Strength or 7
+                    local spn = (tick() * (getgenv().AntiAim_Spin or 2.5)) % 360
+                    p.CFrame = p.CFrame
+                        * CFrame.Angles(math.rad(math.random(-st,st)), math.rad(spn), math.rad(math.random(-st,st)))
+                        + Vector3.new(math.random(-st,st)/11, math.random(-st,st)/8, math.random(-st,st)/11)
                 end
             end
         end
     end
 end)
+end
+
+----------------------------------------------------
+print("Hermes-like Aim GUI loaded! Toggle your settings; always original code and safe to edit.")
