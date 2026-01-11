@@ -1,99 +1,193 @@
--- IMPROVED SILENT AIM WITH PINK FOV + TRACER (EDUCATIONAL USE ONLY)
+--[[ made by #nah2959-ai
+    Silent Aim & Anti Aim GUI - Roblox Lua
+    Paste this into your executor!
+    Educational/learning use only.
+]]
 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
-
--- Settings
-local AIM_FOV_DEGREES = 30         -- FOV angle (degrees)
-local AIM_PART_NAME = "Head"       -- Target body part
-local PINK = Color3.fromRGB(255, 105, 180)
-
--- Helper: get angle between two vectors
-local function angleBetween(v1, v2)
-    local dot = v1:Dot(v2)
-    local mag = v1.Magnitude * v2.Magnitude
-    return math.acos(math.clamp(dot / mag, -1, 1)) * (180 / math.pi)
+-- Simple GUI utility
+local function Create(label, kind)
+    local inst = Instance.new(kind)
+    inst.Name = label
+    return inst
 end
 
--- Find best target in pink FOV
-local function getBestTarget()
-    local bestTarget = nil
-    local lowestAngle = AIM_FOV_DEGREES
+-- Settings
+getgenv().SilentAim_Enabled = false
+getgenv().AntiAim_Enabled = false
+getgenv().SilentAim_FOV = 300
+getgenv().AntiAim_Strength = 10
 
-    local char = LocalPlayer.Character
-    if not (char and char:FindFirstChild("Head")) then return end
+-- GUI
+local ScreenGui = Create("SAntiA-GUI", "ScreenGui")
+pcall(function() ScreenGui.Parent = game.CoreGui end)
+local Frame = Create("MainFrame", "Frame")
+Frame.Parent = ScreenGui
+Frame.BackgroundColor3 = Color3.new(0,0,0)
+Frame.Position = UDim2.new(0.05,0,0.4,0)
+Frame.Size = UDim2.new(0,250,0,180)
+Frame.Active = true
+Frame.Draggable = true
+Frame.BorderSizePixel = 0
 
-    local camPos = Camera.CFrame.Position
-    local camLook = Camera.CFrame.LookVector
+local title = Create("TitleLbl", "TextLabel")
+title.Parent = Frame
+title.Text = "Silent Aim & Anti Aim"
+title.Size = UDim2.new(1,0,0,30)
+title.BackgroundColor3 = Color3.fromRGB(50,50,60)
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 20
 
-    for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
-        if enemy ~= char and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-            local hitPart = enemy:FindFirstChild(AIM_PART_NAME)
-            if hitPart then
-                local toTarget = (hitPart.Position - camPos).Unit
-                local angle = angleBetween(camLook, toTarget)
-                if angle < lowestAngle then
-                    lowestAngle = angle
-                    bestTarget = enemy
+-- Silent Aim Toggle
+local SA_Toggle = Create("SAToggle", "TextButton")
+SA_Toggle.Parent = Frame
+SA_Toggle.Position = UDim2.new(0,10,0,40)
+SA_Toggle.Size = UDim2.new(0,110,0,30)
+SA_Toggle.BackgroundColor3 = Color3.fromRGB(60,80,60)
+SA_Toggle.TextColor3 = Color3.new(1,1,1)
+SA_Toggle.Text = "Silent Aim: OFF"
+
+SA_Toggle.MouseButton1Click:Connect(function()
+    getgenv().SilentAim_Enabled = not getgenv().SilentAim_Enabled
+    SA_Toggle.Text = "Silent Aim: "..(getgenv().SilentAim_Enabled and "ON" or "OFF")
+end)
+
+-- Silent Aim FOV Slider
+local SA_FOV = Create("SAFov", "TextBox")
+SA_FOV.Parent = Frame
+SA_FOV.Position = UDim2.new(0,130,0,40)
+SA_FOV.Size = UDim2.new(0,100,0,30)
+SA_FOV.BackgroundColor3 = Color3.fromRGB(40,40,60)
+SA_FOV.TextColor3 = Color3.new(1,1,0.7)
+SA_FOV.Text = "FOV: "..tostring(getgenv().SilentAim_FOV)
+SA_FOV.ClearTextOnFocus = false
+
+SA_FOV.FocusLost:Connect(function()
+    local val = tonumber(SA_FOV.Text:match("%d+"))
+    if val then
+        getgenv().SilentAim_FOV = val
+        SA_FOV.Text = "FOV: "..tostring(val)
+    else
+        SA_FOV.Text = "FOV: "..tostring(getgenv().SilentAim_FOV)
+    end
+end)
+
+-- Anti Aim Toggle
+local AA_Toggle = Create("AAToggle", "TextButton")
+AA_Toggle.Parent = Frame
+AA_Toggle.Position = UDim2.new(0,10,0,80)
+AA_Toggle.Size = UDim2.new(0,110,0,30)
+AA_Toggle.BackgroundColor3 = Color3.fromRGB(100,40,40)
+AA_Toggle.TextColor3 = Color3.new(1,1,1)
+AA_Toggle.Text = "Anti Aim: OFF"
+
+AA_Toggle.MouseButton1Click:Connect(function()
+    getgenv().AntiAim_Enabled = not getgenv().AntiAim_Enabled
+    AA_Toggle.Text = "Anti Aim: "..(getgenv().AntiAim_Enabled and "ON" or "OFF")
+end)
+
+-- Anti Aim Strength box
+local AA_ST = Create("AASt", "TextBox")
+AA_ST.Parent = Frame
+AA_ST.Position = UDim2.new(0,130,0,80)
+AA_ST.Size = UDim2.new(0,100,0,30)
+AA_ST.BackgroundColor3 = Color3.fromRGB(50,30,30)
+AA_ST.TextColor3 = Color3.new(1,0.8,0.7)
+AA_ST.Text = "Strength: "..tostring(getgenv().AntiAim_Strength)
+AA_ST.ClearTextOnFocus = false
+
+AA_ST.FocusLost:Connect(function()
+    local val = tonumber(AA_ST.Text:match("%d+"))
+    if val then
+        getgenv().AntiAim_Strength = val
+        AA_ST.Text = "Strength: "..tostring(val)
+    else
+        AA_ST.Text = "Strength: "..tostring(getgenv().AntiAim_Strength)
+    end
+end)
+
+-- Credits Label
+local cred = Create("Cred", "TextLabel")
+cred.Parent = Frame
+cred.Position = UDim2.new(0,0,1,-22)
+cred.Size = UDim2.new(1,0,0,22)
+cred.BackgroundTransparency = 1
+cred.TextColor3 = Color3.fromRGB(170,170,170)
+cred.Text = "Copilot - GUI Demo"
+cred.Font = Enum.Font.SourceSans
+cred.TextSize = 16
+
+--------------------------------------------------------
+-- Actual Script Logic
+--------------------------------------------------------
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- PART 1: Silent Aim (with FOV and toggling)
+local function getClosestPlayer()
+    if not getgenv().SilentAim_Enabled then return nil end
+    local closest, shortest = nil, getgenv().SilentAim_FOV or 300
+    local mousePos = UIS:GetMouseLocation()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+            local head = p.Character.Head
+            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            if onScreen then
+                local diff = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                if diff < shortest then
+                    closest, shortest = p, diff
                 end
             end
         end
     end
-
-    return bestTarget
+    return closest
 end
 
--- Drawing (Drawing API, requires execution environment that supports it)
-local Drawing = Drawing or getgenv().Drawing
-local fovCircle, tracer
+if not getgenv().SilentAimHooked then
+    getgenv().SilentAimHooked = true
+    local rawMeta = getrawmetatable(game)
+    local oldNamecall = rawMeta.__namecall
+    setreadonly(rawMeta, false)
 
-if Drawing then
-    -- FOV circle (pink)
-    fovCircle = Drawing.new("Circle")
-    fovCircle.Color = PINK
-    fovCircle.Thickness = 2
-    fovCircle.Filled = false
-    fovCircle.Radius = (Camera.ViewportSize.X/2) * math.tan(math.rad(AIM_FOV_DEGREES/2))
-    fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-    fovCircle.Visible = true
+    rawMeta.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
 
-    -- Update FOV circle on window resize/fov change
-    RunService:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-        fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-        fovCircle.Radius = (Camera.ViewportSize.X/2) * math.tan(math.rad(AIM_FOV_DEGREES/2))
+        if method == "FireServer" and tostring(self):lower():find("hit") then
+            local target = getClosestPlayer()
+            if target and target.Character and target.Character:FindFirstChild("Head") then
+                args[2] = target.Character.Head.Position
+                return oldNamecall(self, unpack(args))
+            end
+        end
+        return oldNamecall(self, ...)
     end)
+    setreadonly(rawMeta, true)
 end
 
--- Tracer update & target logic
-RunService.RenderStepped:Connect(function()
-    local target = getBestTarget()
-    -- Draw tracer (pink) if valid target
-    if Drawing then
-        if tracer then tracer:Remove() tracer = nil end
-        if target and target:FindFirstChild(AIM_PART_NAME) then
-            local head = target[AIM_PART_NAME]
-            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-            if onScreen then
-                tracer = Drawing.new("Line")
-                tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-                tracer.To = Vector2.new(screenPos.X, screenPos.Y)
-                tracer.Color = PINK
-                tracer.Thickness = 2
-                tracer.Visible = true
+-- PART 2: Anti-Aim (toggle and strength adjustable)
+spawn(function()
+    local last = 0
+    local rs = game:GetService("RunService")
+    while true do
+        rs.RenderStepped:Wait()
+        if getgenv().AntiAim_Enabled then
+            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            for _, partName in ipairs({"Head", "UpperTorso", "HumanoidRootPart", "Torso"}) do
+                local part = char:FindFirstChild(partName)
+                if part and part:IsA("BasePart") then
+                    -- Jitter/Spin, strength setting
+                    local s = getgenv().AntiAim_Strength or 10
+                    part.CFrame = part.CFrame + Vector3.new(
+                        math.random(-s,s)/5,
+                        math.random(-s,s)/5,
+                        math.random(-s,s)/5
+                    )
+                end
             end
         end
     end
 end)
-
--- Silent Aim Hook
-local orig_fire = game.ReplicatedStorage.Remotes.Attack.FireServer
-game.ReplicatedStorage.Remotes.Attack.FireServer = function(self, ...)
-    local target = getBestTarget()
-    if target then
-        return orig_fire(self, target)
-    else
-        return orig_fire(self, ...)
-    end
-end
