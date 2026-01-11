@@ -1,0 +1,99 @@
+-- IMPROVED SILENT AIM WITH PINK FOV + TRACER (EDUCATIONAL USE ONLY)
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+
+-- Settings
+local AIM_FOV_DEGREES = 30         -- FOV angle (degrees)
+local AIM_PART_NAME = "Head"       -- Target body part
+local PINK = Color3.fromRGB(255, 105, 180)
+
+-- Helper: get angle between two vectors
+local function angleBetween(v1, v2)
+    local dot = v1:Dot(v2)
+    local mag = v1.Magnitude * v2.Magnitude
+    return math.acos(math.clamp(dot / mag, -1, 1)) * (180 / math.pi)
+end
+
+-- Find best target in pink FOV
+local function getBestTarget()
+    local bestTarget = nil
+    local lowestAngle = AIM_FOV_DEGREES
+
+    local char = LocalPlayer.Character
+    if not (char and char:FindFirstChild("Head")) then return end
+
+    local camPos = Camera.CFrame.Position
+    local camLook = Camera.CFrame.LookVector
+
+    for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
+        if enemy ~= char and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+            local hitPart = enemy:FindFirstChild(AIM_PART_NAME)
+            if hitPart then
+                local toTarget = (hitPart.Position - camPos).Unit
+                local angle = angleBetween(camLook, toTarget)
+                if angle < lowestAngle then
+                    lowestAngle = angle
+                    bestTarget = enemy
+                end
+            end
+        end
+    end
+
+    return bestTarget
+end
+
+-- Drawing (Drawing API, requires execution environment that supports it)
+local Drawing = Drawing or getgenv().Drawing
+local fovCircle, tracer
+
+if Drawing then
+    -- FOV circle (pink)
+    fovCircle = Drawing.new("Circle")
+    fovCircle.Color = PINK
+    fovCircle.Thickness = 2
+    fovCircle.Filled = false
+    fovCircle.Radius = (Camera.ViewportSize.X/2) * math.tan(math.rad(AIM_FOV_DEGREES/2))
+    fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    fovCircle.Visible = true
+
+    -- Update FOV circle on window resize/fov change
+    RunService:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+        fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+        fovCircle.Radius = (Camera.ViewportSize.X/2) * math.tan(math.rad(AIM_FOV_DEGREES/2))
+    end)
+end
+
+-- Tracer update & target logic
+RunService.RenderStepped:Connect(function()
+    local target = getBestTarget()
+    -- Draw tracer (pink) if valid target
+    if Drawing then
+        if tracer then tracer:Remove() tracer = nil end
+        if target and target:FindFirstChild(AIM_PART_NAME) then
+            local head = target[AIM_PART_NAME]
+            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            if onScreen then
+                tracer = Drawing.new("Line")
+                tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+                tracer.To = Vector2.new(screenPos.X, screenPos.Y)
+                tracer.Color = PINK
+                tracer.Thickness = 2
+                tracer.Visible = true
+            end
+        end
+    end
+end)
+
+-- Silent Aim Hook
+local orig_fire = game.ReplicatedStorage.Remotes.Attack.FireServer
+game.ReplicatedStorage.Remotes.Attack.FireServer = function(self, ...)
+    local target = getBestTarget()
+    if target then
+        return orig_fire(self, target)
+    else
+        return orig_fire(self, ...)
+    end
+end
